@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.covariance import LedoitWolf
 
 def euclidean_distance(x, y):
     """
@@ -131,39 +132,23 @@ def gaussian_likelihood(X):
         float: Gaussian log-likelihood of the data.
     """
 
-    # print(f"Type of X: {type(X)}")
-    # print(f"X: {X}")
-    # print(f"Shape of X: {X.shape}")
+    if X.shape[0] == 1:
+        mu = np.zeros(X.shape[1])
+        Sigma = np.eye(X.shape[1])*100  # Use a large covariance for single point
+        # print(f"Warning: Single point in cluster, using large covariance matrix {Sigma} for cluster with mean {mu}.")
+        return scipy.stats.multivariate_normal.logpdf(X[0], mean=mu, cov=Sigma)
+    
+    lw = LedoitWolf()
+    mu = np.mean(X, axis=0)  # Mean of the data points
+    Sigma = lw.fit(X).covariance_  # Use Ledoit-Wolf shrinkage
 
-    if len(X) < 2:
-        return -np.log(2* np.pi) * X.shape[1] / 2  # Handle case with less than 2 points
+    log_lhood = scipy.stats.multivariate_normal.logpdf(X, mean=mu, cov=Sigma, allow_singular=True)
+    
+    total_log_likelihood = np.sum(log_lhood)
 
-    mu = np.mean(X, axis=0)
-    Sigma = np.cov(X, rowvar=False)
-
-    # print(f"Cluster {cluster}:")
-    # print(f"Points in cluster: {X}")
-    # print(f"Mean (mu): {mu}")
-    # print(f"Covariance (Sigma): {Sigma}")
-
-    # Precompute terms
-    n, d = X.shape
-    det_sigma = np.linalg.det(Sigma)
-
-    if det_sigma <= 0:
-        # print(f"Warning: Determinant of covariance matrix is non-positive for cluster {cluster}. Adjusting Sigma.")
-        Sigma += 1e-6 * np.eye(Sigma.shape[0])
-        det_sigma = np.linalg.det(Sigma)
-
-    inv_sigma = np.linalg.inv(Sigma)
-
-    # Compute Mahalanobis distance for each point
-    diff = X - mu
-    mahal = np.einsum('ij,jk,ik->i', diff, inv_sigma, diff)
-
-    # Compute log-likelihood
-    log_likelihoods = -0.5 * (d * np.log(2 * np.pi) + np.log(det_sigma) + mahal)
-    total_log_likelihood = np.sum(log_likelihoods)
+    if np.isnan(total_log_likelihood) or np.isinf(total_log_likelihood):
+        print(f"Warning: Log-likelihood is NaN or Inf for cluster with mean {mu} and covariance {Sigma}.")
+        return -np.inf  # Return negative infinity if log-likelihood is invalid
     return total_log_likelihood
 
 def lhood_same(alpha):
@@ -245,18 +230,20 @@ if __name__ == "__main__":
     # print("Logistic decay graph displayed.")
 
     # graph exponential decay
-    distances = np.linspace(0, 20, 100)
-    decay_values = [exp_decay(d) for d in distances]
-    plt.plot(distances, decay_values)
-    plt.title("Exponential Decay Function")
-    plt.xlabel("Distance")
-    plt.ylabel("Decay Value")
-    plt.grid()
-    plt.show()
-    print("Exponential decay graph displayed.")
+    # distances = np.linspace(0, 20, 100)
+    # decay_values = [exp_decay(d) for d in distances]
+    # plt.plot(distances, decay_values)
+    # plt.title("Exponential Decay Function")
+    # plt.xlabel("Distance")
+    # plt.ylabel("Decay Value")
+    # plt.grid()
+    # plt.show()
+    # print("Exponential decay graph displayed.")
 
     # test gaussian_likelihood
-    data = np.random.normal(loc=0, scale=1, size=100)
+    data = np.random.multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]], size=1)
+    print("Data shape:", data.shape)
+    print("Data sample:", data[:5])
     likelihood = gaussian_likelihood(data)
     print("Gaussian Likelihood:", likelihood)
     # test probability_same
@@ -267,8 +254,8 @@ if __name__ == "__main__":
     prob_new_no_join = lhood_new_no_join(x, y, exp_decay)
     print("Probability New No Join:", prob_new_no_join)
     # test probability_new_join
-    cluster_1 = np.random.normal(loc=0, scale=1, size=50)
-    cluster_2 = np.random.normal(loc=5, scale=1, size=50)
+    cluster_1 = np.random.multivariate_normal(mean=[1, 2], cov=[[1, 0], [0, 1]], size=50)
+    cluster_2 = np.random.multivariate_normal(mean=[4, 6], cov=[[1, 0], [0, 1]], size=50)
     prob_new_join = lhood_new_join(x, y, exp_decay, cluster_1, cluster_2)
     print("Probability New Join:", prob_new_join)
 

@@ -147,10 +147,8 @@ class ddCRP_Gibbs:
                 lhoods.append(lhood_new_no_join(self.data.iloc[x], self.data.iloc[j], self.distance_decay))
             else:
                 x_cluster = self.get_cluster(x)
-                # remove x from the cluster to avoid self-linking
-                x_cluster_without_x = [i for i in x_cluster if i != x]
                 cluster_j = self.get_cluster(j)
-                x_points = self.data.iloc[x_cluster_without_x]
+                x_points = self.data.iloc[x_cluster]
                 j_points = self.data.iloc[cluster_j]
                 x_points = x_points.to_numpy()
                 j_points = j_points.to_numpy()

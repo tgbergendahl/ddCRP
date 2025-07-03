@@ -56,6 +56,6 @@ if __name__ == "__main__":
     beta_values = [5, 7.5, 10]
     distance_decay_types = ['logistic', 'exponential']
 
-    num_iterations = 25
+    num_iterations = 5
 
     test_ddCRP(data_path, results_path, alpha_values, beta_values, distance_decay_types, num_iterations)
