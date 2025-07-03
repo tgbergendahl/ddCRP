@@ -2,6 +2,8 @@ from methods.ddCRP import run_ddCRP
 import os
 import pandas as pd
 import numpy as np
+from multiprocessing import Pool
+
 
 def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay_types, num_iterations):
     """
@@ -16,15 +18,27 @@ def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay
     data = pd.read_csv(data_path)
     print(f"Loaded data from {data_path} with shape {data.shape}")
 
-    for alpha in alpha_values:
-        for beta in beta_values:
-            for distance_decay_type in distance_decay_types:
-                print(f"\rRunning ddCRP with alpha={alpha}, beta={beta}, distance decay={distance_decay_type}, iterations={num_iterations}", end="\n", flush=True)
-                run_ddCRP(data, output_path, alpha, beta, distance_decay_type, num_iterations)
-                print(f"\rCompleted ddCRP with alpha={alpha}, beta={beta}", end="\n", flush=True)
+    processes_pool = Pool(15)  # Create a pool of worker processes
+
+    processes_pool.map(run_ddCRP, [(data, output_path, alpha, beta, distance_decay_type, num_iterations)
+                                    for alpha in alpha_values
+                                    for beta in beta_values
+                                    for distance_decay_type in distance_decay_types])
+
+    processes_pool.close()  # Close the pool to new tasks
+    processes_pool.join()  # Wait for all worker processes to finish
+
+    print("All ddCRP runs completed.")
+
+    # for alpha in alpha_values:
+    #     for beta in beta_values:
+    #         for distance_decay_type in distance_decay_types:
+    #             print(f"\rRunning ddCRP with alpha={alpha}, beta={beta}, distance decay={distance_decay_type}, iterations={num_iterations}", end="\n", flush=True)
+    #             run_ddCRP(data, output_path, alpha, beta, distance_decay_type, num_iterations)
+    #             print(f"\rCompleted ddCRP with alpha={alpha}, beta={beta}", end="\n", flush=True)
 
 if __name__ == "__main__":
-    device = 'mac'  # Change to 'linux' if running on a Linux machine
+    device = 'linux'  # Change to 'linux' if running on a Linux machine
     # Set the data and results paths based on the device
     if device == 'linux':
         data_path = "/home/tgb/research/ddCRP/data/gaussian_data.csv"
@@ -42,6 +56,6 @@ if __name__ == "__main__":
     beta_values = [0.5, 1, 2]
     distance_decay_types = ['logistic', 'exponential']
 
-    num_iterations = 8
+    num_iterations = 4
 
     test_ddCRP(data_path, results_path, alpha_values, beta_values, distance_decay_types, num_iterations)

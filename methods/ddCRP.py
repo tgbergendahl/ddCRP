@@ -227,7 +227,7 @@ class ddCRP_Gibbs:
         print("\n")
         return log_likelihoods
 
-def run_ddCRP(data, output_path, alpha, beta, distance_decay_type='logistic', iterations=10):
+def run_ddCRP(params):
     """
     Run the ddCRP Gibbs sampler on the provided data.
     
@@ -238,6 +238,10 @@ def run_ddCRP(data, output_path, alpha, beta, distance_decay_type='logistic', it
         distance_decay_type (str): Type of distance decay function to use ('logistic', 'exponential', 'window').
         iterations (int): Number of Gibbs sampling iterations.
     """
+
+    data, output_path, alpha, beta, distance_decay_type, iterations = params
+
+    print(f"Running ddCRP with alpha={alpha}, beta={beta}, distance decay={distance_decay_type}, iterations={iterations}")
 
     # Ensure output path exists
     if not os.path.exists(output_path):
