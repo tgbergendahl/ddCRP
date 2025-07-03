@@ -174,7 +174,7 @@ def lhood_same(alpha):
     Returns:
         float: Log-likelihood of a point linking to itself.
     """
-    return alpha
+    return np.log(alpha)  # Assuming alpha is the probability of linking to itself
 
 def lhood_new_no_join(x, y, decay_function):
     """
@@ -188,7 +188,7 @@ def lhood_new_no_join(x, y, decay_function):
     """
     distance = euclidean_distance(x, y)
     decay_value = decay_function(distance)
-    return decay_value
+    return np.log(decay_value)
 
 def lhood_new_join(x, y, decay_function, cluster_1, cluster_2):
     """
@@ -209,10 +209,10 @@ def lhood_new_join(x, y, decay_function, cluster_1, cluster_2):
     decay_value = decay_function(distance)
     # f(d_ij) * likelihood of new cluster (cluster 1 + cluster 2) / likelihood of cluster 1 * likelihood of cluster 2
     combined_clusters = np.vstack((cluster_1, cluster_2))
-    lhood_new = gaussian_likelihood(combined_clusters)
-    lhood_c1 = gaussian_likelihood(cluster_1)
-    lhood_c2 = gaussian_likelihood(cluster_2)
-    total_lhood = decay_value * (lhood_new / (lhood_c1 * lhood_c2))
+    lhood_new = (gaussian_likelihood(combined_clusters))
+    lhood_c1 = (gaussian_likelihood(cluster_1))
+    lhood_c2 = (gaussian_likelihood(cluster_2))
+    total_lhood = np.log(decay_value) + (lhood_new - (lhood_c1 + lhood_c2))
     return total_lhood
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay
     data = pd.read_csv(data_path)
     print(f"Loaded data from {data_path} with shape {data.shape}")
 
-    processes_pool = Pool(15)  # Create a pool of worker processes
+    processes_pool = Pool(6)  # Create a pool of worker processes
 
     processes_pool.map(run_ddCRP, [(data, output_path, alpha, beta, distance_decay_type, num_iterations)
                                     for alpha in alpha_values
@@ -38,7 +38,7 @@ def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay
     #             print(f"\rCompleted ddCRP with alpha={alpha}, beta={beta}", end="\n", flush=True)
 
 if __name__ == "__main__":
-    device = 'linux'  # Change to 'linux' if running on a Linux machine
+    device = 'mac'  # Change to 'linux' if running on a Linux machine
     # Set the data and results paths based on the device
     if device == 'linux':
         data_path = "/home/tgb/research/ddCRP/data/gaussian_data.csv"
@@ -52,10 +52,10 @@ if __name__ == "__main__":
         os.makedirs(results_path)
         
     n = 600
-    alpha_values = [(2/np.log(n)), (4/np.log(n)), (8/np.log(n)), 1, 10]
-    beta_values = [0.5, 1, 2]
+    alpha_values = [(2/np.log(n)), (4/np.log(n)), (8/np.log(n))]
+    beta_values = [5, 7.5, 10]
     distance_decay_types = ['logistic', 'exponential']
 
-    num_iterations = 4
+    num_iterations = 25
 
     test_ddCRP(data_path, results_path, alpha_values, beta_values, distance_decay_types, num_iterations)

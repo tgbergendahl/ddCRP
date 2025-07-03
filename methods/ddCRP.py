@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
+import scipy
+from scipy.special import logsumexp
 import sys
 from typing import List
 import matplotlib.pyplot as plt
@@ -152,7 +154,7 @@ class ddCRP_Gibbs:
                 j_points = self.data.iloc[cluster_j]
                 x_points = x_points.to_numpy()
                 j_points = j_points.to_numpy()
-                lhoods.append(np.exp(lhood_new_join(self.data.iloc[x], self.data.iloc[j], self.distance_decay, 
+                lhoods.append((lhood_new_join(self.data.iloc[x], self.data.iloc[j], self.distance_decay, 
                                              x_points, j_points)))
             # If the likelihood is NaN, we can ignore it or handle it as needed
             if np.isnan(lhoods[-1]):
@@ -161,7 +163,7 @@ class ddCRP_Gibbs:
                 pass
         # sample from the likelihoods
         lhoods = np.array(lhoods)
-        lhoods /= np.sum(lhoods)
+        lhoods = np.exp(lhoods - logsumexp(lhoods))  # Convert log-likelihoods to probabilities
         # Sample a new link based on the likelihoods
         # print(f"Sampling new link for point {x} with probabilities: {lhoods}")
         # Ensure the probabilities sum to 1
@@ -217,15 +219,17 @@ class ddCRP_Gibbs:
             iterations (int): Number of iterations to run the Gibbs sampler.
         """
         log_likelihoods = []
+        number_clusters = []
         for i in range(iterations):
             for x in range(len(self.data)):
                 new_link = self.sample_assignment(x)
             lhood = self.log_likelihood()
             log_likelihoods.append(lhood)
+            number_clusters.append(len(self.clusters))
             print(f"\rIteration {i+1}/{iterations} completed. Number of clusters: {len(self.clusters)}", end="", flush=True)
         # After sampling, links will contain the final assignments
         print("\n")
-        return log_likelihoods
+        return log_likelihoods, number_clusters
 
 def run_ddCRP(params):
     """
@@ -262,10 +266,15 @@ def run_ddCRP(params):
     # print("ddCRP Gibbs sampler model initialized.")
     
     # Run Gibbs sampling
-    lhoods = model.run_gibbs_sampling(iterations=iterations)
+    lhoods, number_clusters = model.run_gibbs_sampling(iterations=iterations)
     # print("Gibbs sampling completed.")
 
     clusters = model.clusters
+
+    output_path = output_path + f"/ddCRP_alpha{alpha}_beta{beta}_{distance_decay_type}/"
+    # Ensure output path exists
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     # Plot results and save to output path
     plt.figure(figsize=(18, 10))
@@ -277,39 +286,41 @@ def run_ddCRP(params):
     plt.xlabel("Feature 1")
     plt.ylabel("Feature 2")
     plt.legend()
-    plt.savefig(output_path+f"/clusters_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
+    plt.savefig(output_path+f"clusters.png")
     # close figure
     plt.close()
     # print(f"Clusters plot saved to {output_path}/clusters_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
 
     # Plot log likelihoods
     plt.figure(figsize=(10, 5))
-    plt.xticks(range(1, iterations + 1))
-    plt.xlim(1, iterations)
-    plt.ylim(min(lhoods), max(lhoods))
-    plt.plot(range(1, iterations + 1), lhoods, marker='o', linestyle='-', color='blue')
-    plt.title(f"Log Likelihoods over Iterations, Alpha={alpha}, Beta={beta}, Distance Decay={distance_decay_type}")
-    plt.xlabel("Iteration")
-    plt.ylabel("Log Likelihood")
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+    ax1.set_xlabel("Iteration")
+    ax1.set_ylabel("Log Likelihood", color='tab:blue')
+    ax1.plot(range(1, iterations + 1), lhoods, marker='o', linestyle='-', color='blue')
+    ax1.tick_params(axis='y', labelcolor='tab:blue')
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    ax2.set_ylabel("Number of Clusters", color='tab:red')
+    ax2.plot(range(1, iterations + 1), number_clusters, marker='x', linestyle='--', color='red')
+    ax2.tick_params(axis='y', labelcolor='tab:red')
+    plt.title(f"Log Likelihoods and Cluster Numbers, Alpha={alpha}, Beta={beta}, Distance Decay={distance_decay_type}")
     plt.grid()
-    plt.savefig(output_path+f"/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
+    plt.savefig(output_path+f"log_likelihoods_cluster_numbers.png")
     # close figure
-    plt.close()
-    # print(f"Log likelihoods plot saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
-    
+    plt.close()    
+
     # Save log likelihoods to a CSV file
-    lhoods_df = pd.DataFrame({'Iteration': range(1, iterations + 1), 'Log Likelihood': lhoods})
-    lhoods_df.to_csv(output_path+f"/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.csv", index=False)
+    lhoods_df = pd.DataFrame({'Iteration': range(1, iterations + 1), 'Log Likelihood': lhoods, 'Number of Clusters': number_clusters})
+    lhoods_df.to_csv(output_path+f"/results.csv", index=False)
     # print(f"Log likelihoods saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.csv")
 
     return
 
 if __name__ == "__main__":
     # Example usage
-    data = pd.read_csv("/Users/tgbergendahl/Research/ddCRP/gaussian_data.csv")
+    data = pd.read_csv("/Users/tgbergendahl/Research/ddCRP/data/gaussian_data.csv")
     print(f"{len(data)} points loaded successfully.")
 
-    model = ddCRP_Gibbs(data, distance_decay=ExponentialDecay(alpha=1), alpha=6.0, beta=1)
+    model = ddCRP_Gibbs(data, distance_decay=ExponentialDecay(alpha=7.5), alpha=0.3, beta=7.5)
     print("ddCRP Gibbs sampler model initialized.")
 
     # lhood = model.log_likelihood()
