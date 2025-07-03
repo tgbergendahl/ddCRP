@@ -5,7 +5,7 @@ import sys
 from typing import List
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from methods.helper import euclidean_distance, DistanceDecay, ExponentialDecay, WindowDecay, LogisticDecay, lhood_new_no_join, lhood_new_join, lhood_same
+from methods.helper import euclidean_distance, gaussian_likelihood, DistanceDecay, ExponentialDecay, WindowDecay, LogisticDecay, lhood_new_no_join, lhood_new_join, lhood_same
 
 class Graph:
     def __init__(self, vertices: int):
@@ -147,8 +147,13 @@ class ddCRP_Gibbs:
                 x_cluster = self.get_cluster(x)
                 # remove x from the cluster to avoid self-linking
                 x_cluster_without_x = [i for i in x_cluster if i != x]
-                lhoods.append(lhood_new_join(self.data.iloc[x], self.data.iloc[j], self.distance_decay, 
-                                             x_cluster_without_x, self.get_cluster(j)))
+                cluster_j = self.get_cluster(j)
+                x_points = self.data.iloc[x_cluster_without_x]
+                j_points = self.data.iloc[cluster_j]
+                x_points = x_points.to_numpy()
+                j_points = j_points.to_numpy()
+                lhoods.append(np.exp(lhood_new_join(self.data.iloc[x], self.data.iloc[j], self.distance_decay, 
+                                             x_points, j_points)))
             # If the likelihood is NaN, we can ignore it or handle it as needed
             if np.isnan(lhoods[-1]):
                 lhoods[-1] = -np.inf
@@ -197,35 +202,9 @@ class ddCRP_Gibbs:
                 point_index = cluster[i]
                 points.append(self.data.iloc[point_index])
             X = np.array(points)
-            mu = np.mean(X, axis=0)
-            if len(X) < 2:
-                continue  # Skip clusters with less than 2 points
 
-            Sigma = np.cov(X, rowvar=False)
+            total_log_likelihood = gaussian_likelihood(X)
 
-            # print(f"Cluster {cluster}:")
-            # print(f"Points in cluster: {X}")
-            # print(f"Mean (mu): {mu}")
-            # print(f"Covariance (Sigma): {Sigma}")
-
-            # Precompute terms
-            n, d = X.shape
-            det_sigma = np.linalg.det(Sigma)
-
-            if det_sigma <= 0:
-                # print(f"Warning: Determinant of covariance matrix is non-positive for cluster {cluster}. Adjusting Sigma.")
-                Sigma += 1e-6 * np.eye(Sigma.shape[0])
-                det_sigma = np.linalg.det(Sigma)
-
-            inv_sigma = np.linalg.inv(Sigma)
-
-            # Compute Mahalanobis distance for each point
-            diff = X - mu
-            mahal = np.einsum('ij,jk,ik->i', diff, inv_sigma, diff)
-
-            # Compute log-likelihood
-            log_likelihoods = -0.5 * (d * np.log(2 * np.pi) + np.log(det_sigma) + mahal)
-            total_log_likelihood = np.sum(log_likelihoods)
             log_likelihood += total_log_likelihood
 
         return log_likelihood

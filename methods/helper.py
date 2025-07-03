@@ -120,7 +120,7 @@ def distance_decay(x, y, decay_function):
 
 # Gibbs Sampling Helper Functions
 
-def gaussian_likelihood(data):
+def gaussian_likelihood(X):
     """
     Calculate the Gaussian log-likelihood of a dataset.
     
@@ -130,15 +130,41 @@ def gaussian_likelihood(data):
     Returns:
         float: Gaussian log-likelihood of the data.
     """
-    n = len(data)
-    if n == 0:
-        return 1  # Avoid division by zero if no data points
-    mean = np.mean(data)
-    variance = np.var(data)
-    if variance == 0:
-        return 1.0  # Avoid division by zero
-    likelihood = (1 / np.sqrt(2 * np.pi * variance)) * np.exp(-((data - mean) ** 2) / (2 * variance))
-    return np.sum(likelihood)  # Return likelihood per point
+
+    # print(f"Type of X: {type(X)}")
+    # print(f"X: {X}")
+    # print(f"Shape of X: {X.shape}")
+
+    if len(X) < 2:
+        return -np.log(2* np.pi) * X.shape[1] / 2  # Handle case with less than 2 points
+
+    mu = np.mean(X, axis=0)
+    Sigma = np.cov(X, rowvar=False)
+
+    # print(f"Cluster {cluster}:")
+    # print(f"Points in cluster: {X}")
+    # print(f"Mean (mu): {mu}")
+    # print(f"Covariance (Sigma): {Sigma}")
+
+    # Precompute terms
+    n, d = X.shape
+    det_sigma = np.linalg.det(Sigma)
+
+    if det_sigma <= 0:
+        # print(f"Warning: Determinant of covariance matrix is non-positive for cluster {cluster}. Adjusting Sigma.")
+        Sigma += 1e-6 * np.eye(Sigma.shape[0])
+        det_sigma = np.linalg.det(Sigma)
+
+    inv_sigma = np.linalg.inv(Sigma)
+
+    # Compute Mahalanobis distance for each point
+    diff = X - mu
+    mahal = np.einsum('ij,jk,ik->i', diff, inv_sigma, diff)
+
+    # Compute log-likelihood
+    log_likelihoods = -0.5 * (d * np.log(2 * np.pi) + np.log(det_sigma) + mahal)
+    total_log_likelihood = np.sum(log_likelihoods)
+    return total_log_likelihood
 
 def lhood_same(alpha):
     """
@@ -182,7 +208,7 @@ def lhood_new_join(x, y, decay_function, cluster_1, cluster_2):
     distance = euclidean_distance(x, y)
     decay_value = decay_function(distance)
     # f(d_ij) * likelihood of new cluster (cluster 1 + cluster 2) / likelihood of cluster 1 * likelihood of cluster 2
-    combined_clusters = cluster_1 + cluster_2
+    combined_clusters = np.vstack((cluster_1, cluster_2))
     lhood_new = gaussian_likelihood(combined_clusters)
     lhood_c1 = gaussian_likelihood(cluster_1)
     lhood_c2 = gaussian_likelihood(cluster_2)

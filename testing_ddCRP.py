@@ -1,6 +1,7 @@
 from methods.ddCRP import run_ddCRP
 import os
 import pandas as pd
+import numpy as np
 
 def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay_types, num_iterations):
     """
@@ -23,15 +24,24 @@ def test_ddCRP(data_path, output_path, alpha_values, beta_values, distance_decay
                 print(f"\rCompleted ddCRP with alpha={alpha}, beta={beta}", end="\n", flush=True)
 
 if __name__ == "__main__":
-    data_path = "/home/tgb/research/ddCRP/data/gaussian_data.csv"
-    results_path = "/home/tgb/research/ddCRP/results"
+    device = 'mac'  # Change to 'linux' if running on a Linux machine
+    # Set the data and results paths based on the device
+    if device == 'linux':
+        data_path = "/home/tgb/research/ddCRP/data/gaussian_data.csv"
+        results_path = "/home/tgb/research/ddCRP/results"
+    else:  # Assuming 'mac'
+        data_path = "/Users/tgbergendahl/Research/ddCRP/data/gaussian_data.csv"
+        results_path = "/Users/tgbergendahl/Research/ddCRP/results"
     # if the results path does not exist, create it
+
     if not os.path.exists(results_path):
         os.makedirs(results_path)
-    alpha_values = [0.5, 1, 2, 4, 8, 16, 20]
-    beta_values = [0.1, 0.5, 1, 2, 5, 10, 20]
-    distance_decay_types = ['logistic', 'exponential', 'window']
+        
+    n = 600
+    alpha_values = [(2/np.log(n)), (4/np.log(n)), (8/np.log(n)), 1, 10]
+    beta_values = [0.5, 1, 2]
+    distance_decay_types = ['logistic', 'exponential']
 
-    num_iterations = 10
+    num_iterations = 8
 
     test_ddCRP(data_path, results_path, alpha_values, beta_values, distance_decay_types, num_iterations)
