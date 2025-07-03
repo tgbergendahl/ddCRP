@@ -76,7 +76,7 @@ class ddCRP_Gibbs:
         self.distance_decay = distance_decay
         self.alpha = alpha
         self.beta = beta
-        self.distance_decay.set_param(alpha=beta)  # Set the decay parameter if needed
+        self.distance_decay.set_param(beta)  # Set the decay parameter if needed
         # initialize by linking all points to themselves
         self.links = {i: i for i in range(len(data))}
         self.clusters = [[i] for i in range(len(data))]  # Each point starts in its own cluster
@@ -245,26 +245,28 @@ class ddCRP_Gibbs:
             log_likelihoods.append(lhood)
             print(f"\rIteration {i+1}/{iterations} completed. Number of clusters: {len(self.clusters)}", end="", flush=True)
         # After sampling, links will contain the final assignments
+        print("\n")
         return log_likelihoods
 
-def run_ddCRP(data_path, output_path, alpha, beta, distance_decay_type='logistic', iterations=10):
+def run_ddCRP(data, output_path, alpha, beta, distance_decay_type='logistic', iterations=10):
     """
     Run the ddCRP Gibbs sampler on the provided data.
     
     Parameters:
-        data_path (str): Path to the input data file.
+        data (pd.DataFrame): Input data containing features.
         alpha (float): Concentration parameter for the CRP.
         beta (float): Scale parameter for the distance decay.
         distance_decay_type (str): Type of distance decay function to use ('logistic', 'exponential', 'window').
         iterations (int): Number of Gibbs sampling iterations.
     """
-    # Load data
-    data = pd.read_csv(data_path)
-    print(f"{len(data)} points loaded successfully.")
-    
+
+    # Ensure output path exists
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     # Initialize distance decay function
     if distance_decay_type == 'logistic':
-        distance_decay = LogisticDecay()
+        distance_decay = LogisticDecay(alpha=beta)
     elif distance_decay_type == 'exponential':
         distance_decay = ExponentialDecay(alpha=beta)
     elif distance_decay_type == 'window':
@@ -274,11 +276,11 @@ def run_ddCRP(data_path, output_path, alpha, beta, distance_decay_type='logistic
     
     # Initialize ddCRP model
     model = ddCRP_Gibbs(data, distance_decay=distance_decay, alpha=alpha, beta=beta)
-    print("ddCRP Gibbs sampler model initialized.")
+    # print("ddCRP Gibbs sampler model initialized.")
     
     # Run Gibbs sampling
     lhoods = model.run_gibbs_sampling(iterations=iterations)
-    print("Gibbs sampling completed.")
+    # print("Gibbs sampling completed.")
 
     clusters = model.clusters
 
@@ -288,26 +290,34 @@ def run_ddCRP(data_path, output_path, alpha, beta, distance_decay_type='logistic
     for idx, cluster in enumerate(clusters):
         cluster_points = data.iloc[cluster]
         plt.scatter(cluster_points['feature_1'], cluster_points['feature_2'], color=colors(idx), label=f'Cluster {idx+1}', s=10)
-    plt.title("Clusters after Gibbs Sampling")
+    plt.title(f"Clusters after Gibbs Sampling, Alpha={alpha}, Beta={beta}, Distance Decay={distance_decay_type}")
     plt.xlabel("Feature 1")
     plt.ylabel("Feature 2")
     plt.legend()
     plt.savefig(output_path+f"/clusters_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
-    print(f"Clusters plot saved to {output_path}/clusters_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
+    # close figure
+    plt.close()
+    # print(f"Clusters plot saved to {output_path}/clusters_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
 
     # Plot log likelihoods
+    plt.figure(figsize=(10, 5))
+    plt.xticks(range(1, iterations + 1))
+    plt.xlim(1, iterations)
+    plt.ylim(min(lhoods), max(lhoods))
     plt.plot(range(1, iterations + 1), lhoods, marker='o', linestyle='-', color='blue')
-    plt.title("Log Likelihoods over Iterations")
+    plt.title(f"Log Likelihoods over Iterations, Alpha={alpha}, Beta={beta}, Distance Decay={distance_decay_type}")
     plt.xlabel("Iteration")
     plt.ylabel("Log Likelihood")
     plt.grid()
     plt.savefig(output_path+f"/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
-    print(f"Log likelihoods plot saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
+    # close figure
+    plt.close()
+    # print(f"Log likelihoods plot saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.png")
     
     # Save log likelihoods to a CSV file
     lhoods_df = pd.DataFrame({'Iteration': range(1, iterations + 1), 'Log Likelihood': lhoods})
     lhoods_df.to_csv(output_path+f"/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.csv", index=False)
-    print(f"Log likelihoods saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.csv")
+    # print(f"Log likelihoods saved to {output_path}/log_likelihoods_alpha{alpha}_beta{beta}_{distance_decay_type}.csv")
 
     return
 

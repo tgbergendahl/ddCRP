@@ -137,8 +137,8 @@ def gaussian_likelihood(data):
     variance = np.var(data)
     if variance == 0:
         return 1.0  # Avoid division by zero
-    likelihood = np.log((1 / np.sqrt(2 * np.pi * variance)) * np.exp(-((data - mean) ** 2) / (2 * variance)))
-    return np.exp(np.sum(likelihood) / n)  # Return average log likelihood per point
+    likelihood = (1 / np.sqrt(2 * np.pi * variance)) * np.exp(-((data - mean) ** 2) / (2 * variance))
+    return np.sum(likelihood)  # Return likelihood per point
 
 def lhood_same(alpha):
     """
