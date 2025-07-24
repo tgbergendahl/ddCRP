@@ -1,2 +1,8 @@
 # ignore results
 results/
+.DS_Store
+# ignore python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

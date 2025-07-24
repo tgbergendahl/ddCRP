@@ -208,7 +208,7 @@ if __name__ == "__main__":
     distance = euclidean_distance(x, y)
     print("Euclidean Distance:", distance)
 
-    exp_decay = ExponentialDecay(alpha=5)
+    exp_decay = ExponentialDecay(alpha=50)
     window_decay = WindowDecay(window_size=10.0)
     logistic_decay = LogisticDecay(alpha=10.0)
 
@@ -230,15 +230,15 @@ if __name__ == "__main__":
     # print("Logistic decay graph displayed.")
 
     # graph exponential decay
-    # distances = np.linspace(0, 20, 100)
-    # decay_values = [exp_decay(d) for d in distances]
-    # plt.plot(distances, decay_values)
-    # plt.title("Exponential Decay Function")
-    # plt.xlabel("Distance")
-    # plt.ylabel("Decay Value")
-    # plt.grid()
-    # plt.show()
-    # print("Exponential decay graph displayed.")
+    distances = np.linspace(0, 100, 1000)
+    decay_values = [exp_decay(d) for d in distances]
+    plt.plot(distances, decay_values)
+    plt.title("Exponential Decay Function")
+    plt.xlabel("Distance")
+    plt.ylabel("Decay Value")
+    plt.grid()
+    plt.show()
+    print("Exponential decay graph displayed.")
 
     # test gaussian_likelihood
     data = np.random.multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]], size=1)

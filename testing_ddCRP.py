@@ -52,10 +52,10 @@ if __name__ == "__main__":
         os.makedirs(results_path)
         
     n = 600
-    alpha_values = [(2/np.log(n)), (4/np.log(n)), (8/np.log(n))]
-    beta_values = [5, 7.5, 10]
-    distance_decay_types = ['logistic', 'exponential']
+    alpha_values = [0.005, 0.1, 50]
+    beta_values = [5, 25, 50, 100]
+    distance_decay_types = ['exponential']
 
-    num_iterations = 5
+    num_iterations = 40
 
     test_ddCRP(data_path, results_path, alpha_values, beta_values, distance_decay_types, num_iterations)
