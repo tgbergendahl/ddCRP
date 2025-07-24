@@ -248,18 +248,18 @@ if __name__ == "__main__":
     print("Gaussian Likelihood:", likelihood)
     # test probability_same
     alpha = 0.5
-    prob_same = lhood_same(alpha)
-    print("Probability Same:", prob_same)
+    final_lhood_same = lhood_same(alpha)
+    print("Likelihood Same:", final_lhood_same)
     # test probability_new_no_join
-    prob_new_no_join = lhood_new_no_join(x, y, exp_decay)
-    print("Probability New No Join:", prob_new_no_join)
+    final_lhood_new_no_join = lhood_new_no_join(x, y, exp_decay)
+    print("Likelihood New No Join:", final_lhood_new_no_join)
     # test probability_new_join
     cluster_1 = np.random.multivariate_normal(mean=[1, 2], cov=[[1, 0], [0, 1]], size=50)
     cluster_2 = np.random.multivariate_normal(mean=[4, 6], cov=[[1, 0], [0, 1]], size=50)
-    prob_new_join = lhood_new_join(x, y, exp_decay, cluster_1, cluster_2)
-    print("Probability New Join:", prob_new_join)
+    final_lhood_new_join = lhood_new_join(x, y, exp_decay, cluster_1, cluster_2)
+    print("Likelihood New Join:", final_lhood_new_join)
 
     # exponentialize
-    print("Exponentialized Probability New Join:", np.exp(prob_new_join))
-    print("Exponentialized Probability New No Join:", np.exp(prob_new_no_join))
-    print("Exponentialized Probability Same:", np.exp(prob_same))
+    print("Probability New Join:", np.exp(final_lhood_new_join))
+    print("Probability New No Join:", np.exp(final_lhood_new_no_join))
+    print("Probability Same:", np.exp(final_lhood_same))
